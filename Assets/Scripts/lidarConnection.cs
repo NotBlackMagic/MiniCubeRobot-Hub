@@ -180,7 +180,7 @@ public class LiDARConnection {
 					distance += packet[13 + (i * 3) + 2];
 					if(scanSamplesRange != null && scanSamplesIndex < scanSamplesRange.Length) {
 						scanSamplesSignalQuality[scanSamplesIndex] = signalQuality;
-						scanSamplesRange[scanSamplesIndex++] = distance * 0.01; //Convert from cm to m
+						scanSamplesRange[scanSamplesIndex++] = distance * 0.00254; //Convert from 0.1" inch to m
 					}
 				}
 

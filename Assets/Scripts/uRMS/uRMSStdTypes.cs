@@ -25,6 +25,20 @@ namespace uRMSConnector {
 			return i;
 		}
 
+		public static int Serialize(short src, ref byte[] dst, int offset) {
+			int i = 0;
+			dst[offset + i++] = (byte)(src >> 8);
+			dst[offset + i++] = (byte)(src);
+			return i;
+		}
+
+		public static int Deserialize(byte[] src, ref short dst, int offset) {
+			int i = 0;
+			dst = (short)(src[offset + i++] << 8);
+			dst += (src[offset + i++]);
+			return i;
+		}
+
 		public static int Serialize(int src, ref byte[] dst, int offset) {
 			int i = 0;
 			dst[offset + i++] = (byte)(src >> 24);

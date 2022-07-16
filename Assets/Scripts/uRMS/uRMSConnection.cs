@@ -6,7 +6,7 @@ using NBMSerial;
 namespace uRMSConnector {
 	public class uRMSConnection {
 		//Serial Port Variables
-		string port = "COM2";
+		string port = "COM1";
 		int baudrate = 115200;
 		NBMSerialPort serialPort = new NBMSerialPort();
 

@@ -108,7 +108,7 @@ public class RobotLaserScan : MonoBehaviour {
 		}
 		laserScanMesh.triangles = laserScanTriangles;
 
-		if(liDARConnection.Connect("COM3", 115200, OnNewLaserScan, OnNewRPM) == true) {
+		if (liDARConnection.Connect("COM3", 115200, OnNewLaserScan, OnNewRPM) == true) {
 			Debug.Log("LiDAR Connected");
 		}
 	}
@@ -124,7 +124,7 @@ public class RobotLaserScan : MonoBehaviour {
 			//	refrencePosition = matchingPosition;
 			//}
 
-			refrencePosition = LaserScanToPointCloud(laserScanRanges, 0.01f, 2.0f);
+			refrencePosition = LaserScanGraphics.LaserScanToPointCloud(laserScanRanges, laserScanStart.x, laserScanStep.x, laserScanStart.y, laserScanStep.y); //LaserScanToPointCloud(laserScanRanges, 0.01f, 2.0f);
 			refrencePointCloud = new ParticleSystem.Particle[refrencePosition.Length];
 			for (int i = 0; i < refrencePosition.Length; i++) {
 				refrencePointCloud[i].position = refrencePosition[i];
@@ -220,7 +220,7 @@ public class RobotLaserScan : MonoBehaviour {
 			//}
 
 			if(showLaserScanMesh == true) {
-				Vector3[] meshPoints = LaserScanToPointCloud(laserScanRanges, 0, 10);
+				Vector3[] meshPoints = LaserScanGraphics.LaserScanToPointCloud(laserScanRanges, laserScanStart.x, laserScanStep.x, laserScanStart.y, laserScanStep.y); //LaserScanToPointCloud(laserScanRanges, 0, 10);
 				laserScanMesh.vertices = meshPoints;
 
 				//Create Laser Scan Mesh Lines
@@ -276,50 +276,28 @@ public class RobotLaserScan : MonoBehaviour {
 		return cartesian;
 	}
 
-	Vector3[] LaserScanToPointCloud(float[][] ranges, float minRage, float maxRange) {
-		List<Vector3> points = new List<Vector3>();
+	//Vector3[] LaserScanToPointCloud(float[][] ranges, float minRange, float maxRange) {
+	//	List<Vector3> points = new List<Vector3>();
 
-		int cnt = 0;
-		for (int v = 0; v < ranges.Length; v++) {
-			for (int h = 0; h < ranges[0].Length; h++) {
-				if(ranges[v][h] < minRage || ranges[v][h] > maxRange) {
-					continue;
-				}
+	//	int cnt = 0;
+	//	for (int v = 0; v < ranges.Length; v++) {
+	//		for (int h = 0; h < ranges[0].Length; h++) {
+	//			if(ranges[v][h] < minRange || ranges[v][h] > maxRange) {
+	//				continue;
+	//			}
 
-				//Convert from spherical to cartesian
-				Vector2 pointCloudStart = laserScanStart;
-				float angleH = (90 - (pointCloudStart.x + laserScanStep.x * h)) * Mathf.Deg2Rad;    //Horizontal Angle (around Vector point up), in radians
-				float angleV = (pointCloudStart.y + laserScanStep.y * v) * Mathf.Deg2Rad;			//Vertical Angle, in radians
-				points.Add(SphericalToCartesian(ranges[v][h], angleH, angleV));
+	//			//Convert from spherical to cartesian
+	//			Vector2 pointCloudStart = laserScanStart;
+	//			float angleH = (90 - (pointCloudStart.x + laserScanStep.x * h)) * Mathf.Deg2Rad;    //Horizontal Angle (around Vector point up), in radians
+	//			float angleV = (pointCloudStart.y + laserScanStep.y * v) * Mathf.Deg2Rad;			//Vertical Angle, in radians
+	//			points.Add(SphericalToCartesian(ranges[v][h], angleH, angleV));
 
-				cnt++;
-			}
-		}
+	//			cnt++;
+	//		}
+	//	}
 
-		return points.ToArray();
-	}
-
-	Vector3[] LaserScanToPointCloud(double[] ranges, float minRange, float maxRange) {
-		List<Vector3> points = new List<Vector3>();
-
-		float scanStart = 360;
-		float scanStep = 360.0f / ranges.Length;
-
-		int cnt = 0;
-		for (int h = 0; h < ranges.Length; h++) {
-			if (ranges[h] < minRange || ranges[h] > maxRange) {
-				int v = 0;
-				//Convert from spherical to cartesian
-				float angleH = (scanStart - scanStep * h) * Mathf.Deg2Rad;		//Horizontal Angle (around Vector point up), in radians
-				float angleV = 0 * Mathf.Deg2Rad;								//Vertical Angle, in radians
-				points.Add(SphericalToCartesian((float)ranges[h], angleH, angleV));
-
-				cnt++;
-			}
-		}
-
-		return points.ToArray();
-	}
+	//	return points.ToArray();
+	//}
 
 	public void UpdateLaserScan(float[][] ranges) {
 		if(ranges == null) {
@@ -340,12 +318,12 @@ public class RobotLaserScan : MonoBehaviour {
 		}
 		laserScanRanges = ranges;
 
-		Vector3[] positions = LaserScanToPointCloud(laserScanRanges, 0.01f, 2.0f);
+		Vector3[] positions = LaserScanGraphics.LaserScanToPointCloud(laserScanRanges, laserScanStart.x, laserScanStep.x, laserScanStart.y, laserScanStep.y); //LaserScanToPointCloud(laserScanRanges, 0.01f, 2.0f);
 		refrencePointCloud = new ParticleSystem.Particle[positions.Length];
 
 		for (int i = 0; i < positions.Length; i++) {
 			refrencePointCloud[i].position = positions[i];
-			refrencePointCloud[i].startColor = refrencePointCloudColor;     //Color.Lerp(Color.yellow, Color.red, Vector3.Distance(positions[i], Vector3.zero) / 2.0f);
+			refrencePointCloud[i].startColor = refrencePointCloudColor;
 			refrencePointCloud[i].startSize = pointCloudScale;
 		}
 
@@ -390,12 +368,13 @@ public class RobotLaserScan : MonoBehaviour {
 	private void OnNewLaserScan(double[] ranges, double[] signalQuality, int size) {
 		Debug.Log("LiDAR New Scan: " + size.ToString());
 
-		Vector3[] positions = LaserScanToPointCloud(ranges, 0.01f, 6.0f);
+		float scanStep = 360.0f / ranges.Length;
+		Vector3[] positions = LaserScanGraphics.LaserScanToPointCloud(ranges, 0, scanStep);
 		refrencePointCloud = new ParticleSystem.Particle[positions.Length];
 
 		for (int i = 0; i < positions.Length; i++) {
 			refrencePointCloud[i].position = positions[i];
-			refrencePointCloud[i].startColor = refrencePointCloudColor;     //Color.Lerp(Color.yellow, Color.red, Vector3.Distance(positions[i], Vector3.zero) / 2.0f);
+			refrencePointCloud[i].startColor = LaserScanGraphics.ColorGradient(((double)i / positions.Length), 0, 1);
 			refrencePointCloud[i].startSize = pointCloudScale;
 		}
 
